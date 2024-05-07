@@ -118,13 +118,17 @@ X_train, X_test, y_train, y_test = train_test_split(X, y,
 X_train[0]
 y_train[0]
      
+
+
 input_word = layers.Input(shape=(max_len,))
 # Add an embedding layer to convert word indices to dense vectors
-embedding = layers.Embedding(input_dim=num_words, output_dim=50, input_length=max_len)(input_word)
-# LSTM layer with return_sequences=True to output sequences
-lstm_out = layers.LSTM(units=64, return_sequences=True)(embedding)
+embedding = layers.Embedding(input_dim=num_words, output_dim=100, input_length=max_len)(input_word)
+# Bidirectional LSTM layer for better capturing context
+lstm_out = layers.Bidirectional(layers.LSTM(units=128, return_sequences=True))(embedding)
+# Dropout layer for regularization to prevent overfitting
+dropout = layers.Dropout(0.2)(lstm_out)
 # TimeDistributed layer for outputting one label per timestep
-output = layers.TimeDistributed(layers.Dense(num_tags, activation="softmax"))(lstm_out)
+output = layers.TimeDistributed(layers.Dense(num_tags, activation="softmax"))(dropout)
 
 model = Model(input_word, output)
      
@@ -137,10 +141,11 @@ model.compile(optimizer="adam",
 history = model.fit(
     x=X_train,
     y=y_train,
-    validation_data=(X_test,y_test),
-    batch_size=32, 
-    epochs=3,
+    validation_data=(X_test, y_test),
+    batch_size=64, 
+    epochs=5,
 )
+
      
 metrics = pd.DataFrame(model.history.history)
 metrics.head()
